@@ -46,21 +46,29 @@ class LlamaIndexProvider(Provider):
         if not issubclass(provider_obj, BaseLLM):
             raise TypeError("LLM provider must be e.g. a llama_index.llms.* class - a subclass of llama_index.core.base.llms.base.BaseLLM")
 
-        # This doesn't work on 100% of the LlamaIndex LLM integrations, but it's a fairly reliable pattern,
-        # and works for the important ones such as OpenAILike.
-        kwargs_for_provider = {'model':model_name,
-                               'model_name':model_name,
-                               'api_key':api_key,
-                               'token':api_key,
-                               'is_chat_model':False,
-                               'is_function_calling_model':False}
+        # Minimal kwargs that Anthropic (and most LlamaIndex LLM integrations) accept.
+        kwargs_for_provider = {
+            'model': model_name,
+            'api_key': api_key,
+        }
         if api_base_url:
-            kwargs_for_provider['base_url'] = \
-                kwargs_for_provider['api_base'] = api_base_url
-        kwargs_for_provider.update(opts)
-        kwargs_for_provider['context_window'] = \
-            kwargs_for_provider['max_tokens'] = kwargs_for_provider.get('num_ctx', 20000)
-        self._client = provider_obj(**kwargs_for_provider)
+            kwargs_for_provider['base_url'] = api_base_url
+        # Add temperature and max_tokens from opts if present
+        if opts.get('temperature') is not None:
+            kwargs_for_provider['temperature'] = opts['temperature']
+        if opts.get('max_tokens') is not None:
+            kwargs_for_provider['max_tokens'] = opts['max_tokens']
+        try:
+            self._client = provider_obj(**kwargs_for_provider)
+        except TypeError as e:
+            # Fallback for providers that still expect `model_name` instead of `model`.
+            if 'model' in str(e) or 'unexpected keyword argument' in str(e):
+                legacy_kwargs = {**kwargs_for_provider}
+                legacy_kwargs.pop('model', None)
+                legacy_kwargs['model_name'] = model_name
+                self._client = provider_obj(**legacy_kwargs)
+            else:
+                raise
 
     def _generate_sync(self, prompt: str, **options) -> str:
         """
@@ -93,15 +101,11 @@ class LlamaIndexEmbeddingProvider(EmbeddingProvider):
         provider_obj, self._modname, self._classname = _get_real_provider(provider)
         if not issubclass(provider_obj, BaseEmbedding):
             raise TypeError("Embedding provider must be e.g. a llama_index.embeddings.* class - a subclass of llama_index.core.base.embeddings.base.BaseEmbedding")
-        # Again, this doesn't work on 100% of the LlamaIndex embedding
-        # integrations, but it's a fairly reliable pattern, and works
-        # for the important ones such as OpenAILike.
-        kwargs_for_provider = {'model':embedding_model,
-                               'model_name':embedding_model,
-                               'api_key':self._api_key,
-                               'token':self._api_key,
-                               'is_chat_model':False,
-                               'is_function_calling_model':False}
+        # Minimal kwargs that work across LlamaIndex embedding integrations.
+        kwargs_for_provider = {
+            'model': embedding_model,
+            'api_key': self._api_key,
+        }
         if self._api_base_url:
             kwargs_for_provider['base_url'] = \
                 kwargs_for_provider['api_base'] = self._api_base_url

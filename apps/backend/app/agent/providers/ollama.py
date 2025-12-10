@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import ollama
 
@@ -9,6 +10,9 @@ from .base import Provider, EmbeddingProvider
 from ...core import settings
 
 logger = logging.getLogger(__name__)
+
+# Global lock to prevent concurrent Ollama requests which cause EOF errors
+_ollama_lock = asyncio.Lock()
 
 class OllamaBaseProvider:
     @staticmethod
@@ -100,19 +104,21 @@ class OllamaEmbeddingProvider(EmbeddingProvider, OllamaBaseProvider):
     async def embed(self, text: str) -> List[float]:
         """
         Generate an embedding for the given text.
+        Uses a lock to prevent concurrent requests which cause Ollama EOF errors.
         """
-        try:
-            response = await run_in_threadpool(
-                self._client.embed,
-                input=text,
-                model=self._model,
-            )
-            # Handle both shapes: {"embedding":[...]} or {"embeddings":[[...]]}
-            if hasattr(response, "embedding") and response.embedding:
-                return response.embedding  # type: ignore[return-value]
-            if hasattr(response, "embeddings") and response.embeddings:
-                return response.embeddings[0]  # type: ignore[index]
-            raise ProviderError("Ollama - Empty embedding response")
-        except Exception as e:
-            logger.error(f"ollama embedding error: {e}")
-            raise ProviderError(f"Ollama - Error generating embedding: {e}") from e
+        async with _ollama_lock:
+            try:
+                response = await run_in_threadpool(
+                    self._client.embed,
+                    input=text,
+                    model=self._model,
+                )
+                # Handle both shapes: {"embedding":[...]} or {"embeddings":[[...]]}
+                if hasattr(response, "embedding") and response.embedding:
+                    return response.embedding  # type: ignore[return-value]
+                if hasattr(response, "embeddings") and response.embeddings:
+                    return response.embeddings[0]  # type: ignore[index]
+                raise ProviderError("Ollama - Empty embedding response")
+            except Exception as e:
+                logger.error(f"ollama embedding error: {e}")
+                raise ProviderError(f"Ollama - Error generating embedding: {e}") from e
