@@ -108,3 +108,30 @@ class JobKeywordExtractionError(Exception):
             message = "Job keyword extraction failed. Cannot improve resume without job requirements."
         super().__init__(message)
         self.job_id = job_id
+
+
+class EmbeddingError(Exception):
+    """
+    Exception raised when the embedding provider fails to generate embeddings.
+    
+    This error indicates that the matching/scoring step cannot proceed,
+    and no further LLM calls should be made for this request.
+    """
+
+    def __init__(
+        self,
+        provider: Optional[str] = None,
+        original_error: Optional[str] = None,
+        message: Optional[str] = None,
+    ):
+        if message:
+            pass
+        elif provider and original_error:
+            message = f"Embedding provider '{provider}' failed: {original_error}"
+        elif original_error:
+            message = f"Embedding generation failed: {original_error}"
+        else:
+            message = "Embedding generation failed. Cannot proceed with resume matching."
+        super().__init__(message)
+        self.provider = provider
+        self.original_error = original_error

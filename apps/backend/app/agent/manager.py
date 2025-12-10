@@ -78,6 +78,9 @@ class EmbeddingManager:
                 from .providers.ollama import OllamaEmbeddingProvider
                 model = kwargs.get("embedding_model", self._model)
                 return OllamaEmbeddingProvider(embedding_model=model)
+            case 'local_tfidf':
+                from .providers.local_tfidf import LocalTfidfEmbeddingProvider
+                return LocalTfidfEmbeddingProvider()
             case _:
                 from .providers.llama_index import LlamaIndexEmbeddingProvider
                 embed_api_key = kwargs.get("embedding_api_key", settings.EMBEDDING_API_KEY)

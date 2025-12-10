@@ -26,6 +26,7 @@ from app.services import (
     JobParsingError,
     ResumeKeywordExtractionError,
     JobKeywordExtractionError,
+    EmbeddingError,
 )
 from app.schemas.pydantic import ResumeImprovementRequest
 
@@ -217,6 +218,13 @@ async def score_and_improve(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(e),
+        )
+    except EmbeddingError as e:
+        # Embedding provider failed - return 503 to indicate service unavailable
+        logger.error(f"Embedding provider failure: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Embedding provider failed: {e}. Please check that Ollama is running and the embedding model is available.",
         )
     except Exception as e:
         logger.error(f"Error: {str(e)} - traceback: {traceback.format_exc()}")

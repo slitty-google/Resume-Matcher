@@ -9,6 +9,7 @@ from .exceptions import (
     JobParsingError,
     ResumeKeywordExtractionError,
     JobKeywordExtractionError,
+    EmbeddingError,
 )
 
 __all__ = [
@@ -21,5 +22,6 @@ __all__ = [
     "ResumeValidationError",
     "ResumeKeywordExtractionError",
     "JobKeywordExtractionError",
+    "EmbeddingError",
     "ScoreImprovementService",
 ]

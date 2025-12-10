@@ -15,6 +15,7 @@ from app.prompt import prompt_factory
 from app.schemas.json import json_schema_factory
 from app.schemas.pydantic import ResumePreviewerModel, ResumeAnalysisModel
 from app.agent import EmbeddingManager, AgentManager
+from app.agent.exceptions import EmbeddingProviderError
 from app.models import Resume, Job, ProcessedResume, ProcessedJob
 from .exceptions import (
     ResumeNotFoundError,
@@ -23,6 +24,7 @@ from .exceptions import (
     JobParsingError,
     ResumeKeywordExtractionError,
     JobKeywordExtractionError,
+    EmbeddingError,
 )
 
 logger = logging.getLogger(__name__)
@@ -377,15 +379,24 @@ class ScoreImprovementService:
         )
         skill_priority_text = self._build_skill_priority_text(skill_stats_for_prompt)
 
-        resume_embedding_task = asyncio.create_task(
-            self.embedding_manager.embed(resume.content)
-        )
-        job_kw_embedding_task = asyncio.create_task(
-            self.embedding_manager.embed(extracted_job_keywords)
-        )
-        resume_embedding, extracted_job_keywords_embedding = await asyncio.gather(
-            resume_embedding_task, job_kw_embedding_task
-        )
+        # Generate embeddings for matching - use sequential calls for stability
+        # This prevents the EOF errors that occur with concurrent Ollama requests
+        try:
+            logger.info("Generating resume embedding...")
+            resume_embedding = await self.embedding_manager.embed(resume.content)
+            
+            logger.info("Generating job keywords embedding...")
+            extracted_job_keywords_embedding = await self.embedding_manager.embed(extracted_job_keywords)
+        except EmbeddingProviderError as e:
+            # Log the full error but don't proceed to LLM calls
+            logger.error(
+                f"Embedding provider failed, skipping improvement LLM call: {e}",
+                exc_info=True
+            )
+            raise EmbeddingError(
+                provider=self.embedding_manager._model_provider,
+                original_error=str(e),
+            ) from e
 
         cosine_similarity_score = self.calculate_cosine_similarity(
             extracted_job_keywords_embedding, resume_embedding
