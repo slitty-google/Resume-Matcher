@@ -1,10 +1,6 @@
 SCHEMA = {
-    "details": "string",
-    "commentary": "string",
-    "improvements": [
-        {
-            "suggestion": "string",
-            "lineNumber": "string | null",
-        }
-    ],
+    "score": "integer (0-100)",
+    "justification": "string (up to 3 sentences)",
+    "missing_keywords": ["string", "string"],
+    "suggested_bullets": ["string", "string"],
 }

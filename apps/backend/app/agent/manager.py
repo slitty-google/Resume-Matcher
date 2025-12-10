@@ -25,7 +25,10 @@ class AgentManager:
         # Default options for any LLM. Not all can handle them
         # (e.g. OpenAI doesn't take top_k) but each provider can make
         # best effort.
-        opts = {}
+        opts = {
+            "temperature": settings.LLM_TEMPERATURE,
+            "max_tokens": settings.LLM_MAX_TOKENS,
+        }
         opts.update(kwargs)
         match self.model_provider:
             case 'openai':

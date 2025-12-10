@@ -24,15 +24,31 @@ class Settings(BaseSettings):
     LLM_API_KEY: Optional[str] = None
     LLM_BASE_URL: Optional[str] = None
     LL_MODEL: Optional[str] = "gemma3:4b"
+    LLM_TEMPERATURE: float = 0.2
+    LLM_MAX_TOKENS: int = 1500
     EMBEDDING_PROVIDER: Optional[str] = "ollama"
     EMBEDDING_API_KEY: Optional[str] = None
     EMBEDDING_BASE_URL: Optional[str] = None
     EMBEDDING_MODEL: Optional[str] = "dengcao/Qwen3-Embedding-0.6B:Q8_0"
 
+    # Optional vendor-specific keys; mapped into LLM_API_KEY for convenience.
+    ANTHROPIC_API_KEY: Optional[str] = None
+    RAYCAST_API_KEY: Optional[str] = None
+
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, ".env"),
         env_file_encoding="utf-8",
+        extra="forbid",
     )
+
+    def __init__(self, **values):
+        super().__init__(**values)
+        # Backfill LLM_API_KEY from vendor-specific keys if not provided.
+        if not self.LLM_API_KEY:
+            if self.ANTHROPIC_API_KEY:
+                object.__setattr__(self, "LLM_API_KEY", self.ANTHROPIC_API_KEY)
+            elif self.RAYCAST_API_KEY:
+                object.__setattr__(self, "LLM_API_KEY", self.RAYCAST_API_KEY)
 
 
 settings = Settings()

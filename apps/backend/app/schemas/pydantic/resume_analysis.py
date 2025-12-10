@@ -1,13 +1,9 @@
-from typing import List, Optional
-from pydantic import BaseModel
-
-
-class ImprovementItem(BaseModel):
-    suggestion: str
-    lineNumber: Optional[str] = None
+from typing import List
+from pydantic import BaseModel, Field
 
 
 class ResumeAnalysisModel(BaseModel):
-    details: str
-    commentary: str
-    improvements: List[ImprovementItem]
+    score: int = Field(ge=0, le=100)
+    justification: str
+    missing_keywords: List[str]
+    suggested_bullets: List[str]

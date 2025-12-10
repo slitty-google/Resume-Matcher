@@ -331,12 +331,7 @@ class ScoreImprovementService:
         prompt = prompt_template.format(
             schema,
             job_description,
-            extracted_job_keywords,
-            original_resume,
-            extracted_resume_keywords,
             improved_resume,
-            original_score,
-            new_score,
         )
 
         raw_output = await self.json_agent_manager.run(prompt=prompt)
@@ -435,9 +430,17 @@ class ScoreImprovementService:
             "new_score": updated_score,
             "updated_resume": markdown.markdown(text=updated_resume),
             "resume_preview": resume_preview,
-            "details": resume_analysis.get("details") if resume_analysis else "",
-            "commentary": resume_analysis.get("commentary") if resume_analysis else "",
-            "improvements": resume_analysis.get("improvements") if resume_analysis else [],
+            "score": resume_analysis.get("score") if resume_analysis else None,
+            "justification": resume_analysis.get("justification") if resume_analysis else "",
+            "missing_keywords": resume_analysis.get("missing_keywords") if resume_analysis else [],
+            "suggested_bullets": resume_analysis.get("suggested_bullets") if resume_analysis else [],
+            # Legacy compatibility keys
+            "details": resume_analysis.get("justification") if resume_analysis else "",
+            "commentary": "",
+            "improvements": [
+                {"suggestion": b, "lineNumber": None}
+                for b in (resume_analysis.get("suggested_bullets") or [])
+            ] if resume_analysis else [],
             "original_resume_markdown": resume.content,
             "updated_resume_markdown": updated_resume,
             "job_description": job.content,
@@ -536,13 +539,13 @@ class ScoreImprovementService:
             job_text=job.content,
         )
 
-        if resume_analysis and resume_analysis.get("improvements"):
-            for i, suggestion in enumerate(resume_analysis["improvements"]):
+        if resume_analysis and resume_analysis.get("suggested_bullets"):
+            for i, suggestion in enumerate(resume_analysis["suggested_bullets"]):
                 payload = {
                     "status": "suggestion",
                     "index": i,
-                    "text": suggestion.get("suggestion", ""),
-                    "reference": suggestion.get("lineNumber"),
+                    "text": suggestion,
+                    "reference": None,
                 }
                 yield f"data: {json.dumps(payload)}\n\n"
                 await asyncio.sleep(0.2)
@@ -554,9 +557,18 @@ class ScoreImprovementService:
             "new_score": updated_score,
             "updated_resume": markdown.markdown(text=updated_resume),
             "resume_preview": resume_preview,
-            "details": resume_analysis.get("details") if resume_analysis else "",
-            "commentary": resume_analysis.get("commentary") if resume_analysis else "",
-            "improvements": resume_analysis.get("improvements") if resume_analysis else [],
+            # New CV analysis fields
+            "score": resume_analysis.get("score") if resume_analysis else None,
+            "justification": resume_analysis.get("justification") if resume_analysis else "",
+            "missing_keywords": resume_analysis.get("missing_keywords") if resume_analysis else [],
+            "suggested_bullets": resume_analysis.get("suggested_bullets") if resume_analysis else [],
+            # Legacy compatibility keys
+            "details": resume_analysis.get("justification") if resume_analysis else "",
+            "commentary": "",
+            "improvements": [
+                {"suggestion": b, "lineNumber": None}
+                for b in (resume_analysis.get("suggested_bullets") or [])
+            ] if resume_analysis else [],
             "original_resume_markdown": resume.content,
             "updated_resume_markdown": updated_resume,
             "job_description": job.content,
