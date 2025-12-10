@@ -1,3 +1,38 @@
+"""
+LlamaIndex Provider Integration
+
+This module provides LLM integration via LlamaIndex's provider abstraction.
+
+=============================================================================
+ANTHROPIC KWARGS REFERENCE
+=============================================================================
+
+When using LLM_PROVIDER="llama_index.llms.anthropic.Anthropic", only the
+following kwargs are supported by the Anthropic constructor:
+
+    ALLOWED KWARGS:
+    ---------------
+    - model (str)           : Model name, e.g., "claude-sonnet-4-5"
+    - api_key (str)         : Anthropic API key (sk-ant-...)
+    - base_url (str)        : Optional API base URL
+    - temperature (float)   : Sampling temperature (0.0-1.0)
+    - max_tokens (int)      : Maximum tokens in response
+
+    FORBIDDEN KWARGS (will cause TypeError):
+    -----------------------------------------
+    - model_name            : Use 'model' instead
+    - token                 : Use 'api_key' instead
+    - is_chat_model         : Not supported by Anthropic
+    - is_function_calling_model : Not supported
+    - context_window        : Not supported
+    - num_output            : Use 'max_tokens' instead
+
+If you encounter constructor errors, check that only allowed kwargs are passed.
+The LlamaIndexProvider class below implements this filtering automatically.
+
+=============================================================================
+"""
+
 import logging
 
 from typing import Any, Dict, List

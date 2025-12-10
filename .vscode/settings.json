@@ -1,4 +1,10 @@
 {
     "python.envFile": "${workspaceFolder}/apps/backend/.env",
-    "python.terminal.useEnvFile": true
+    "python.terminal.useEnvFile": true,
+    "python.defaultInterpreterPath": "${workspaceFolder}/apps/backend/.venv/bin/python",
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/apps/backend"
+    ],
+    "python.analysis.autoSearchPaths": true,
+    "python-envs.pythonProjects": []
 }

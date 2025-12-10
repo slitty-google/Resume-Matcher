@@ -224,7 +224,7 @@ async def score_and_improve(
         logger.error(f"Embedding provider failure: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Embedding provider failed: {e}. Please check that Ollama is running and the embedding model is available.",
+            detail=f"Embedding provider failed: {e}. Check EMBEDDING_PROVIDER in .env.",
         )
     except Exception as e:
         logger.error(f"Error: {str(e)} - traceback: {traceback.format_exc()}")

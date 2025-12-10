@@ -60,33 +60,53 @@ class AgentManager:
         return await self.strategy(prompt, provider, **kwargs)
 
 class EmbeddingManager:
+    """
+    Manages embedding generation for CV-to-job matching.
+    
+    IMPORTANT: This project uses LOCAL EMBEDDINGS ONLY.
+    
+    Default provider: local_tfidf (no external API required)
+    
+    External embedding APIs (Ollama, OpenAI, Voyage, etc.) are DISABLED.
+    Attempting to use them will raise an error to prevent accidental API calls.
+    """
+    
     def __init__(self,
-                 model: str = settings.EMBEDDING_MODEL,
-                 model_provider: str = settings.EMBEDDING_PROVIDER) -> None:
+                 model: str = settings.EMBEDDING_MODEL or "",
+                 model_provider: str = settings.EMBEDDING_PROVIDER or "local_tfidf") -> None:
+        # Hard default to local_tfidf if provider is empty or None
         self._model = model
-        self._model_provider = model_provider
+        self._model_provider = (model_provider or "local_tfidf").lower().strip()
 
     async def _get_embedding_provider(
         self, **kwargs: Any
     ) -> EmbeddingProvider:
+        # Route to the correct provider based on configuration
+        # Default: local_tfidf (no external deps, always works)
+        # 
+        # SECURITY: External embedding APIs are DISABLED to prevent:
+        #   1. Accidental API costs
+        #   2. Network dependency failures
+        #   3. Data leakage to external services
+        #
         match self._model_provider:
             case 'openai':
-                from .providers.openai import OpenAIEmbeddingProvider
-                api_key = kwargs.get("openai_api_key", settings.EMBEDDING_API_KEY)
-                return OpenAIEmbeddingProvider(api_key=api_key, embedding_model=self._model)
+                # DISABLED: External API not allowed
+                raise RuntimeError(
+                    "External embedding API is disabled; use local_tfidf. "
+                    "Set EMBEDDING_PROVIDER='local_tfidf' in .env"
+                )
             case 'ollama':
-                from .providers.ollama import OllamaEmbeddingProvider
-                model = kwargs.get("embedding_model", self._model)
-                return OllamaEmbeddingProvider(embedding_model=model)
-            case 'local_tfidf':
+                # DISABLED: External API not allowed
+                raise RuntimeError(
+                    "External embedding API is disabled; use local_tfidf. "
+                    "Set EMBEDDING_PROVIDER='local_tfidf' in .env"
+                )
+            case 'local_tfidf' | _:
+                # Default case: always fall back to local_tfidf
+                # This ensures we never accidentally call external APIs
                 from .providers.local_tfidf import LocalTfidfEmbeddingProvider
                 return LocalTfidfEmbeddingProvider()
-            case _:
-                from .providers.llama_index import LlamaIndexEmbeddingProvider
-                embed_api_key = kwargs.get("embedding_api_key", settings.EMBEDDING_API_KEY)
-                return LlamaIndexEmbeddingProvider(api_key=embed_api_key,
-                                                   provider=self._model_provider,
-                                                   embedding_model=self._model)
 
     async def embed(self, text: str, **kwargs: Any) -> list[float]:
         """
