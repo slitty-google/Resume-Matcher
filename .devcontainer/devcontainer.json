@@ -1,0 +1,30 @@
+{
+  "name": "resume-matcher-dev",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.13"
+    }
+  },
+  "postCreateCommand": "npm install",
+  "portsAttributes": {
+    "3000": { "label": "frontend", "onAutoForward": "openBrowser" },
+    "8000": { "label": "backend", "onAutoForward": "notify" }
+  },
+  "forwardPorts": [3000, 8000],
+  "remoteUser": "node",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "editor.formatOnSave": true
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "esbenp.prettier-vscode",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  }
+}

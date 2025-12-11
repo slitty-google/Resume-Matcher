@@ -20,10 +20,11 @@ class Settings(BaseSettings):
     SYNC_DATABASE_URL: str = f"sqlite:///{_DEFAULT_DB_PATH}"
     ASYNC_DATABASE_URL: str = f"sqlite+aiosqlite:///{_DEFAULT_DB_PATH}"
     SESSION_SECRET_KEY: str = "resume-matcher-dev"
-    LLM_PROVIDER: Optional[str] = "ollama"
+    # Default to Anthropic via LlamaIndex to match project guidance
+    LLM_PROVIDER: Optional[str] = "llama_index.llms.anthropic.Anthropic"
     LLM_API_KEY: Optional[str] = None
     LLM_BASE_URL: Optional[str] = None
-    LL_MODEL: Optional[str] = "gemma3:4b"
+    LL_MODEL: Optional[str] = "claude-sonnet-4-5"
     LLM_TEMPERATURE: float = 0.2
     LLM_MAX_TOKENS: int = 4000
     # Default to local_tfidf for embeddings - no external API required
